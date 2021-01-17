@@ -1,0 +1,368 @@
+---
+output:
+  html_document: default
+  pdf_document: default
+---
+<!--
+title: "Trabalho Programação - Anabela Ribeiro"
+author: "Anabela Ribeiro"
+date: "9 de Março de 2017"
+output: html_document
+--> 
+
+#**Análise de Dados sobre *Doença Renal Crónica***
+> <span style="font-family: Century Gothic">Mestrado de Informática Médica</span>   
+> <span style="font-family: Century Gothic">Faculdade de Medicina da Universidade do Porto</span>  
+> <span style="font-family: Century Gothic">Faculdade de Ciências da Universidade do Porto</span>   
+> <span style="font-family: Century Gothic">UC - Programação</span>  
+<br>
+> <span style="font-family: Century Gothic">Anabela Almeida Ribeiro</span>   
+> <span style="font-family: Century Gothic">*9 de março de 2017*</span>  
+<br>
+![](fmup.jpg) ![](fcup.jpg) 
+
+***
+##Índice
+ 1. [Introdução][]
+    i) [DataSet Original][]
+    ii) [Atributos Selecionados do DataSet Original][]
+    iii) [Alterações Efetuadas ao DataSet][]
+    iv) [DataSet Final][]
+    v) [Bibliotecas utilizadas][]
+ 2. [Análise de Dados][]
+ 3. [Conclusão][]
+ 4. [Referências][]
+
+ 
+***
+
+##Introdução
+
+A Doença Renal Crónica ou Insuficiência Renal Crónica é uma patologia bastante agressiva que provoca a perda irreversível das funções renais. Esta patologia tem uma elevada taxa de mortalidade. ^[1]^    
+Como tal, torna-se importante perceber quais os fatores de risco que estão associados a tal doença, nomeadamente, a hemoglobina, a doença arterial coronária, anemia, entre outros.
+
+Assim, a [Chronic_Kidney_Disease DataSet](https://archive.ics.uci.edu/ml/datasets/Chronic_Kidney_Disease#) reúne várias informações referentes a possíveis fatores de risco assim como consequentes problemas, relacionados com o estágio inicial da Doença Renal Crónica. Estes dados foram recolhidos na Índia, em julho de 2015, com o apoio da Universidade de Alagappa.
+
+Na análise realizada apenas foram considerados 12 atributos, que irão ser de seguida descriminados, com o propósito de realizar uma dissecação mais restrita.
+<br>  
+
+***
+
+<!-- Comandos necessários para que o programa 'corra' -->
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+#Leitura do DataSet Original
+path <- "/Users/Anabela/Documents/Informática Médica/Programação/Programação_Anabela_Ribeiro/"
+#header=T -> = a TRUE - A PRIMEIRA LINHA SÃO TITULOS
+base <- read.csv(paste(path,"chronic_kidney_disease.data",sep=""),header=T,na.strings="?")
+
+#Bibliotecas necessárias para realizar a análise
+library(Hmisc) #Caracterização de Dados Multivariados
+library(dplyr) # Manipulação de dados
+library(ggplot2)#Análise Gráfica
+```
+
+### DataSet Original
+```{r warning=FALSE, message=FALSE}
+#Caracterização da Base de Dados Original
+describe(base)
+```
+O DataSet original possui 25 variáveis, 401 observações e  existem **muitos valores em falta**.
+<br>  
+
+### Atributos Selecionados do DataSet Original
+Atributo [^1] | Descrição                           |  Categorias / Valores de Referência [^2]
+:-----------: | ----------------------------------- | ----------------------------------------
+AGE           | Idade dos inquiridos                | ---------------------------------------
+BLOODP        | Pressão Arterial (mm/Hg) [^3]       | 6.0 A 8.9 mm/Hg ^[2]^
+SUGAR         | Nível de Açúcar                     | 0,1 -- LOW; 2,3 -- NORMAL; 4,5 -- HIGH
+UREA          | Nível de Ureia no Sangue (mgs/dL)   | 15 a 45mgs/dL ^[3]^
+SOD           | Nível de Sódio no Sangue (mEq/L)    | Valores normais: 135 a 145 mEq/L ^[4]^
+POT           | Nível de Potássio no Sangue (mEq/L) | 3.5 a 5.0 mEq/L ^[4]^
+HEMOG         | Hemoglobina (gms)                   | 14 a 18 gms ^[5]^
+HYPERT        | Hipertensão                         | *unknown; yes; no*
+DM            | Diabetes *Mellitus*                 | *unknown; yes; no*
+CAD           | Doença Arterial Coronária           | *unknown; yes; no*
+APPET         | Apetite                             | *unknown; good; poor*
+ANEM          | Anemia                              | *unknow; yes; no*
+
+[^1]: O nome dos atributos foram alterados de forma a torná-los mais intuitivos.
+[^2]: Dada a falta de informação quanto a valores de referência, foram adicionados valores consultados em referências bibliográficas adicionais.  
+[^3]: Como os autores do DataSet não especificaram qual a pressão arterial medida, após uma cuidada pesquisa foi selecionada a Pressão Diastólica como a mais indicada tendo em conta os valores apresentados na base de dados.
+
+<br>  
+
+### Alterações Efetuadas ao DataSet
+Como podemos constactar, o DataSet escolhido possui muitos valores em falta (*NA*). Contudo, para que a análise pretendida fosse clara e objetiva, tornou-se necessário remover estes valores. 
+
+```{r, warning=FALSE, message=FALSE}
+#Ocultar as ocorrências com valor 'NA'
+na <- na.omit(base)
+#Nº de Ocorrências depois de retirados os 'NA'
+nrow(na)
+```
+Dado que, depois de eliminar os valores em falta, o novo DataSet ficou com 158 ocorrências, não foi necessário fazer uma seleção randomizada dos dados.
+
+De seguida, foi feita a seleção dos atributos pretendidos, assim como a sua renomeação de forma a que a sua interpretação fosse mais intuitiva e clara.
+```{r, warning=FALSE, message=FALSE}
+#Seleção dos atributos do DataSet Original
+bd <- na[c("age","bp","su","bu","sod", "pot", "hemo", "htn", "dm", "cad", "appet", "ane")]
+#Renomeação do nome dos atributos
+names(bd) <-c("AGE","BLOODP","SUGAR","UREA","SOD","POT","HEMOG","HYPERT","DM","CAD", "APPET", "ANEM")
+#Estrutura do novo DataSet
+str(bd)
+```  
+    
+Após analisar as características base do novo DataSet, é possivel verificar que vários atributos categóricos possuem classes com erros e o atributo *AGE*, que deveria ser contínuo, apresenta-se como um fator. Para além disso, o atributo *SUGAR* foi categorizado por níveis percetíveis para serem alvo de avaliação. 
+Assim, foram feitas as seguintes alterações: 
+```{r, warning=FALSE, message=FALSE}
+#Renomeação das categorias do atributo 'APPET'
+levels(bd$APPET)[1]<-"unknown"
+levels(bd$APPET)[3]<-"unknown"
+
+#Renomeação das categorias do atributo 'DM'
+levels(bd$DM)[1]<-"unknown"
+levels(bd$DM)[2]<-"yes"
+levels(bd$DM)[3]<-"no"
+levels(bd$DM)[4]<-"yes"
+
+#Renomeação das categorias do atributo 'CAD'
+levels(bd$CAD)[1]<-"unknown"
+levels(bd$CAD)[2]<-"no"
+
+#Renomeação das categorias do atributo 'ANEM'
+levels(bd$ANEM)[1]<-"unknown"
+
+#Conversão do atributo 'SUGAR' em fator
+bd$SUGAR<-as.factor(bd$SUGAR)
+# Alteração das categorias do atributo 'SUGAR'
+levels(bd$SUGAR) <- c("LOW","LOW","NORMAL","NORMAL","HIGH","HIGH")
+
+#Renomeação de uma categoria do atributo 'HYPERT'
+levels(bd$HYPERT)[1]<-"unknown"
+
+#Conversão do atributo 'AGE' em numérico
+bd$AGE<-as.numeric(bd$AGE)
+```
+<br>  
+
+### DataSet Final
+Após as alterações demonstradas, o DataSet Final possui 12 atributos, 6 dos quais são fatores. 
+As propriedades estatísticas e as características destes atributos podem ser observados nos quadros seguintes.  
+```{r, warning=FALSE, message=FALSE}
+#Estrutura do DataSet Final
+str(bd)
+#Sumário global das propriedades estatísticas básicas do DataSet Final
+summary(bd)
+```
+<br>  
+
+###Bibliotecas Utilizadas  
+<br>  
+
+>+ Library(dplyr) --- Gramática de Manipulação de dados     
+>+ Library(Hmisc) --- Caracterização de Dados Multivariados  
+>+ Library(ggplot2) --- Gramática de Gráficos para uma visualização mais elegante  
+
+<br>    
+
+*** 
+
+## Análise de Dados
+#### <span style="color:SlateGrey; font-family: Calibri">*Idade dos Inquiridos*
+```{r, message=FALSE, warning=FALSE}
+#Apresentação da média de idades arredondada com 0 casas decimais, do mínimo e do máximo
+idade<-c(round(mean(bd$AGE),0),range(bd$AGE))
+names(idade)<-c("Idade: Média", "Min", "Máx")
+idade
+#Obtenção da idade mais frequente e menos frequente através de uma tabela de frequências da idade
+idade.f<-table(bd$AGE)
+names(idade.f)[c(which.max(idade.f),which.min(idade.f))]
+``` 
+A idade média da amostra analisada de inquiridos é de 40 anos, sendo a idade mínima de 2 anos e a idade máxima de 75 anos. Por sua vez, a idade menos frequente é 2 anos e a mais frequente é 49 anos.  
+<br>  
+
+#### <span style="color:SlateGrey; font-family: Calibri">*Gráfico de Barras: Distribuição dos Níveis de Açúcar*
+```{r, warning=FALSE, message=FALSE}
+ggplot(bd,aes(x=SUGAR)) + geom_bar(fill="#9AB7D3", colour="white") + theme_classic() + theme(plot.title = element_text(hjust = 0.5))+
+  ggtitle('Distribuição dos Níveis de Açúcar no Sangue')+ylab('Nº de Ocorrências')+xlab('Níveis de Açúcar')
+```  
+
+O número de indivíduos com níveis baixos de açúcar no sangue é significativamente superior aos restantes. 
+No entanto, torna-se interessante perceber se os inquiridos possuiam Diabetes *Mellitus* e, se sim, quais eram os seus níveis quando foi feita a recolha dos dados.     
+<br>  
+
+#### <span style="color:SlateGrey; font-family: Calibri">*Níveis de Açúcar no sangue em função da Diabetes Mellitus*
+```{r, warning=FALSE, message=FALSE}
+#Tabela de frequências que relaciona o atributo 'DM' com o atributo 'SUGAR'
+ftable(bd$DM,bd$SUGAR)
+```  
+Após a análise dos dados, é possível afirmar que apenas uma pequena parte da amostra, 28 indivíduos, possui Diabetes *Mellitus* e que 17 destes registaram baixos níveis de açúcar no sangue. Assim, é possível concluir que esta doença não está implicita no desenvolvimento da Doença Renal Crónica.  
+<br>  
+
+#### <span style="color:SlateGrey; font-family: Calibri">*Distribuição da Idade em função da Hipertensão*
+```{r, warning=FALSE, message=FALSE}
+#Quadro que relaciona o atributo 'HYPERT' com o atributo 'AGE' (dividido por classes)
+table(cut(bd$AGE, seq(0,100, by=25)),bd$HYPERT)
+#Obtenção das propriedades estatísticas da relação de um atributo contínuo ('AGE') por um categórico ('HYPERT')
+by(bd$AGE,bd$HYPERT,summary)
+```  
+Os indivíduos hipertensos concentram-se entre os 29 e os 75 anos, sendo que a média das idades é de 51 anos. No entanto, a grande maioria dos inquiridos não possui hipertensão e a sua média de idades é de 36 anos, aproximadamente.   
+Assim, é possível concluir, através da amostra analisada, que os inquiridos hipertensos possuem uma idade superior aos indivíduos não hipertensos.  
+<br>  
+
+#### <span style="color:SlateGrey; font-family: Calibri">*Gráfico Circular: Distribuição da Doença Arterial Coronária*
+```{r, warning=FALSE, message=FALSE}
+ggplot(bd,aes(x=factor(1),fill=CAD)) + geom_bar(width=1) +
+ggtitle('Distribuição da Doença Arterial Coronária') + xlab("") + ylab("")+ scale_fill_brewer(palette="Blues")+ theme_minimal() + theme(plot.title = element_text(hjust = 0.5))+ coord_polar(theta="y")
+```  
+
+Através da análise do gráfico circular, podemos ver que a grande maioria dos inquiridos não possui Doença Arterial Coronária.  
+<br>  
+
+#### <span style="color:SlateGrey; font-family: Calibri">*Valores Extremos dos Atributos Contínuos*
+```{r, warning=FALSE, message=FALSE}
+#Apresenta o número total de Outliers dos Atributos Contínuos, assim como a sua Média
+conta.med <- function(df)
+{
+  for(i in 1:ncol(df))
+  {
+    #Verificação se o atributo é numérico
+    if(is.numeric(df[,i]))
+    {
+      #Obtenção dos outliers 
+      out <- boxplot.stats(df[,i])$out
+      #Cálculo da Média 
+      med <- mean(df[,i])
+      print(paste(names(df)[i], " : outliers -",length(out)," | média - ", round(med,2) ))
+    }
+  }
+}
+conta.med(bd)
+```
+Os atributos que possuem *outliers*, isto é valores extremos, são os referentes à concentração no sangue de sódio, potássio, hemoglobina e ureia. Este último sobressai visto que possui 24 valores extremos e, como tal, foi necessário fazer uma análise mais detalhada com o fim de perceber a sua razão.
+```{r, warning=FALSE, message=FALSE}
+#Outliers do atributo 'UREA'
+boxplot.stats(bd$UREA)$out
+```  
+Tendo em conta que a média dos valores medidos de Ureia é de 52,58 mgs/dL e que os seus valores de referência estão entre os 15 e os 45mgs/dL, para além de podermos observar que os valores, em média, são um pouco elevados, é possível afirmar que podem ter ocorrido erros na recolha dos dados visto que há valores de 309 mgs/dL.   
+<br>  
+  
+#### <span style="color:SlateGrey; font-family: Calibri">*Relação entre Anemia e valores médios de Hemoglobina*
+```{r, warning=FALSE, message=FALSE}
+#Apresentação da média do atributo 'HEMOG' para cada categoria do atributo 'ANEM', ordenando de forma crescente pela média do 1º atributo 
+bd %>% 
+  group_by(ANEM) %>%
+  summarise(Hemoglobina.Med=mean(HEMOG)) %>% 
+  arrange(Hemoglobina.Med)
+```
+É possível verificar que a presença de anemia está diretamente relacionada com valores de hemoglobina baixos. Em adição, um indíviduo não anémico, em média, apresenta quase o dobro de concentração de hemoglobina no sangue do que um indivíduo anémico.  
+<br>  
+  
+#### <span style="color:SlateGrey; font-family: Calibri">*Relação entre a Anemia, o Apetite, os Níveis de Sódio e de Potássio*
+```{r, message=FALSE, warning=FALSE}
+#Apresentação do número de indivíduos com anemia e das médias dos atributos 'SOD' e 'POT', agrupados pelo      atributo 'APPET' 
+filter(bd,ANEM=="yes") %>%
+  group_by(APPET)%>%
+  summarise(TOTAL=n_distinct(AGE),Med.Pot=mean(POT),Med.Sod=mean(SOD))
+```
+Considerando os valores de referência mencionados anteriormente, podemos afirmar que indivíduos com anemia e com bom apetite possuem, em média, elevadas concentrações de potássio no sangue e baixas de sódio. Em contrapartida, indivíduos anémicos e com falta de apetite, em média, apresentam niveís normais de potássio e carência de sódio.
+Desta forma, a análise é inconclusiva quanto à relação entre a concentração de sódio no sangue e o estado de apetite em indivíduos anémicos.  
+<br>  
+  
+#### <span style="color:SlateGrey; font-family: Calibri">*Percentagem de indivíduos com baixo Nível de Açúcar, Diabetes Mellitus e Doença Arterial Coronária*
+```{r, message=FALSE, warning=FALSE}
+# Apresentação da percentagem de indivíduos com a classe do atributo 'SUGAR' igual a 'LOW', agrupados pelos    atributos 'DM' e 'CAD'
+filter(bd,SUGAR=="LOW") %>% 
+  group_by(DM,CAD) %>% summarise(percent.pessoas=round(100*(n()/158),2))
+```
+Apenas 1.90% dos indivíduos inquiridos possuem baixos níveis de açúcar, Daibetes *Mellitus* e Doença Arterial Coronária. 
+Por sua vez, 80,38% da amostra analisada não possui nenhuma das doenças mencionadas e os seus níveis de açúcar são igualmente baixos.  
+<br>  
+  
+#### <span style="color:SlateGrey; font-family: Calibri">*Relação entre a Hipertensão e a concentração média de Ureia no sangue*
+```{r, warning=FALSE, message=FALSE}  
+# Apresentação da média do atributo 'UREA' e da média do ano de nascimento (arredondada com 0 casas decimais)  dos indivíduos em que a classe do atributo 'HYPERT' é igual a 'yes'
+bd%>%
+  mutate(BIRTH=2015-AGE)%>%
+  filter(HYPERT=="yes")%>%
+  summarise(Med.Urea = mean(UREA),
+               Med.Nasc=round(mean(BIRTH),0))
+```
+Os indivíduos hipertensos possuem, em média, uma elevada concentração de ureia no sangue, ou seja, é possível afirmar que o fator de risco (hipertensão) está relacionado com um a deterioração da função renal demonstrado pelos valores de ureia apresentados.  
+<br>  
+  
+#### <span style="color:SlateGrey; font-family: Calibri">*Histograma: Hemoglobina no Sangue em Função da presença de Anemia e do Apetite*
+```{r, warning=FALSE, message=FALSE}
+ggplot(bd,aes(x=HEMOG)) + geom_histogram(binwidth=5, fill="#9AB7D3", colour="white") + theme_bw()+ theme(plot.title = element_text(hjust = 0.5))+ facet_grid(ANEM~APPET,scales = "free_y")+
+ggtitle('Hemoglobina no Sangue em Função da presença de Anemia e do Apetite') + ylab('Nº de Ocorrências') + xlab('Quantidade de Hemoglobina no Sangue')
+```  
+
+É possivel observar que grande parte dos inquiridos não possui anemia e, como tal, os seus valores de hemoglobina estão normais, possuindo um apetite normal. Em contraste, os indivíduos anémicos, logo portadores de valores de hemoglobina baixos, possuem, na sua maioria, um fraco apetite. 
+Assim, é possível afirmar que há uma relação inversamente proporcional entre a anemia e o apetite, ou seja, a presença de anemia provoca um baixo apetite.  
+<br>  
+
+#### <span style="color:SlateGrey; font-family: Calibri">*Boxplot: Níveis de Sódio no sangue em função da Doença Arterial Coronária*
+```{r, warning=FALSE, message=FALSE}
+ggplot(bd,aes(x=CAD,y=SOD)) + geom_boxplot(fill="#9AB7D3", colour="#6C8995") + theme_update(plot.title = element_text(hjust = 0.5)) +
+  xlab("Doença Arterial Coronária") + ylab("Quantidade de Sódio no Sangue") +
+  ggtitle('Níveis de Sódio em função da Doença Arterial Coronária')
+```  
+  
+Pela interpretação do gráfico apresentado, uma maior quantidade de sódio no sangue não é um fator de risco da Doença Arterial Coronária. No entanto, elevados níveis de sódio estão relacionados com a obesidade, outro fator de risco da Doença Arterial Coronária. Assim, os dados podem estar enviesados devido a um erro de leitura ou de medição.  
+<br>  
+
+#### <span style="color:SlateGrey; font-family: Calibri">*Gráfico de Dispersão: Relação entre a Pressão Arterial e a Idade mediante a Hipertensão*
+```{r, warning=FALSE, message=FALSE}
+ggplot(bd,aes(x=BLOODP,y=AGE)) + geom_point(aes(colour=HYPERT), size=2) + facet_wrap(~ HYPERT) +
+  xlab("Pressão Arterial") + ylab("Idade") + theme(strip.text.x = element_blank(), plot.title = element_text(hjust = 0.5))+ 
+  ggtitle(paste('Relação entre a Pressão Arterial e a Idade para Não Hipertensos e Hipertensos'))
+```  
+
+Os indivíduos inquiridos com hipertensão possuem valores distibuídos de pressão arterial, isto é os seus valores são baixos e elevados. No entanto, é de salientar o facto de os hipertensos possuirem uma idade compreendida entre os 29 e os 75 anos, concentrando-se essencialmente na faixa dos 50.  
+<br>  
+
+#### <span style="color:SlateGrey; font-family: Calibri">*Relação entre os diferentes Atributos*
+```{r, warning=FALSE, message=FALSE}
+#Apresentação dos atributos 'SUGAR', 'SOD', 'UREA', 'POT', 'HEMOG', 'BLOODP', 'BIRTH' dos indivíduos em que a  classe dos atributos 'DM', 'HYPERT', 'CAD' 'ANEM' é igual a 'yes'
+bd%>%
+  mutate(BIRTH=2015-AGE)%>%
+  filter(DM=="yes",HYPERT=="yes",CAD=="yes",ANEM=="yes")%>%
+  select(starts_with("S"),UREA,POT,HEMOG,starts_with("B"))
+```
+
+Dos 158 indivíduos inquiridos, apenas 3 possuem Diabetes *Mellitus*, Hipertensão, Doença Arterial Coronária e Anemia. É possível, ainda, verificar que nasceram entre as décadas 50 e 60.  
+Para além disso, de uma forma geral, os seus valores de sódio estão normais assim com a pressão arterial, de acordo com os valores de referência. Porém, os valores de hemoglobina são baixos e a concentração de ureia no sangue é significativamente elevada. 
+Assim, vemos que vários fatores de risco estão interligados às patologias mencionadas. 
+
+<br>
+
+#### <span style="color:SlateGrey; font-family: Calibri">*Parallel Plots: Distribuição dos valores de Ureia e de Hemoglobina em função da Doença Arterial Coronária*
+```{r, warning=FALSE, message=FALSE}
+library(GGally)
+ggparcoord(bd,columns=c(4,7),groupColumn="CAD")
+```
+
+Os indivíduos com Doença Arterial Coronária, de uma forma geral, possuem valores de Ureia mais baixos e de Hemoglobina mais altos, enquanto que os que não são portadores da patologia tendem a possuir os valores de forma inversa. 
+
+<br>
+
+***  
+
+## Conclusão  
+
+A Doença Renal Crónica é uma patologia que se encontra intrinsecamente relacionada com outras doenças, visto que englobam os mesmo sintomas.   
+Após a análise feita, é possível afirmar que a base de dados utilizada possui valores bastante distintos entre si, o que oferece uma avaliação heterogénea dos vários inquiridos. 
+Como tal, foi possível observar como diferentes fatores de risco, tais como os níveis de ureia, de hemoglobina, de sódio, entre outros, condicionam as diferentes patologias, entre elas a Diabetes *Mellitus* e a Doença Arterial Coronária.   
+Por fim, a nível crítico, é possível salientar o enviesamento de alguns dados e a falta de informação dos autores do DataSet Original quanto à recolha e aos valores de referência utilizados. 
+
+<br>  
+
+***  
+
+##Referências 
+^[1]^ [Portal da Diálise - Insuficiência Renal](https://www.portaldadialise.com/portal/insuficiencia-renal)     
+^[2]^  [Instituto Nacional de Cardiologia Preventiva - Hipertensão Arterial](http://www.incp.pt/conselhos/sobre-a-hipertensao-arterial)  
+^[3]^ [Médico Responde: Especialidades Médicas - Valor de referência da Ureia](https://medicoresponde.com.br/qual-o-valor-de-referencia-da-ureia/)  
+^[4]^ [Saúde: Exames - Sódio e Potássio](http://saude.ig.com.br/minhasaude/exames/sodio-e-potassio/ref1237835472381.html)  
+^[5]^ [Tua Saúde - Hemoglobina](https://www.tuasaude.com/hemoglobina/)    
